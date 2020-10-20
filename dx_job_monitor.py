@@ -1,3 +1,9 @@
+#!/bin/python3
+
+""" dx_job_monitor
+Finds failed jobs in 002 projects and sends messages to alert the team
+"""
+
 import sys
 
 import dxpy
@@ -8,6 +14,12 @@ import hermes
 
 
 def get_002_projects():
+    """ Return list of 002 projects
+
+    Returns:
+        list: List of project ids
+    """
+
     project_objects = []
     projects = dxpy.find_projects(name="002_*", name_mode="glob")
 
@@ -18,6 +30,15 @@ def get_002_projects():
 
 
 def get_failed_jobs_per_project(projects):
+    """ Return dict of project2jobs
+
+    Args:
+        projects (list): List of project ids
+
+    Returns:
+        dict: Dict of project to failed jobs
+    """
+
     project2jobs = {}
 
     for project in projects:
@@ -38,6 +59,12 @@ def get_failed_jobs_per_project(projects):
 
 
 def send_msg_using_hermes(project2jobs):
+    """ Sends msg using Hermes
+
+    Args:
+        project2jobs (dict): Dict of project to failed jobs
+    """
+
     for project, jobs in project2jobs.items():
         if jobs == []:
             message = f"No jobs have failed in {project} the last 24h"
