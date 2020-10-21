@@ -81,14 +81,15 @@ def send_msg_using_hermes(project2jobs, project_no_run):
                 jobs = ", ".join(project2jobs[project][state])
 
                 if state == "failed":
-                    message = (
-                        f":x:: The following jobs failed in {project} - {jobs}"
-                    )
+                    message = ((
+                        ":x: The following jobs failed in"
+                        f" {project} - {jobs} :x:"
+                    ))
                     hermes.main(
                         {
                             "token_file": TOKEN_FILE_PATH,
                             "channel": "egg-alerts",
-                            "cmd": "msg", "message": message
+                            "cmd": "msg", "message": message, "verbose": False
                         }
                     )
         else:
@@ -98,13 +99,14 @@ def send_msg_using_hermes(project2jobs, project_no_run):
     if project_no_pb:
         job_run_but_no_pb_projects = ", ".join(project_no_pb)
         message = (
-            ":heavy_check_mark:: Jobs have been run in the last 24h and"
-            f" none have failed for: {job_run_but_no_pb_projects}"
+            ":heavy_check_mark: Jobs have been run in the last 24h and "
+            "none have failed for: "
+            f"{job_run_but_no_pb_projects} :heavy_check_mark:"
         )
         hermes.main(
             {
                 "token_file": TOKEN_FILE_PATH, "channel": "egg-logs",
-                "cmd": "msg", "message": message
+                "cmd": "msg", "message": message, "verbose": False
             }
         )
 
@@ -112,13 +114,13 @@ def send_msg_using_hermes(project2jobs, project_no_run):
     if project_no_run:
         nb_projects_no_jobs = len(project_no_run)
         message = (
-            ":heavy_check_mark:: No jobs have been ran in the last 24h"
-            f" for {nb_projects_no_jobs} projects"
+            ":heavy_check_mark: No jobs have been ran in the last 24h "
+            f"for {nb_projects_no_jobs} projects :heavy_check_mark:"
         )
         hermes.main(
             {
                 "token_file": TOKEN_FILE_PATH, "channel": "egg-logs",
-                "cmd": "msg", "message": message
+                "cmd": "msg", "message": message, "verbose": False
             }
         )
 
