@@ -82,7 +82,7 @@ def send_msg_using_hermes(project2jobs, project_no_run):
 
                 if state == "failed":
                     message = (
-                        f"The following jobs failed in {project} - {jobs}"
+                        f":x:: The following jobs failed in {project} - {jobs}"
                     )
                     hermes.main(
                         {
@@ -98,7 +98,7 @@ def send_msg_using_hermes(project2jobs, project_no_run):
     if project_no_pb:
         job_run_but_no_pb_projects = ", ".join(project_no_pb)
         message = (
-            "Jobs have been run in the last 24h and"
+            ":heavy_check_mark:: Jobs have been run in the last 24h and"
             f" none have failed for: {job_run_but_no_pb_projects}"
         )
         hermes.main(
@@ -112,7 +112,7 @@ def send_msg_using_hermes(project2jobs, project_no_run):
     if project_no_run:
         nb_projects_no_jobs = len(project_no_run)
         message = (
-            "No jobs have been ran in the last 24h"
+            ":heavy_check_mark:: No jobs have been ran in the last 24h"
             f" for {nb_projects_no_jobs} projects"
         )
         hermes.main(
