@@ -1,7 +1,25 @@
-# dx_job_monitor
-Check if the 002 jobs completed correctly and sends notifications
+## What does this app do?
 
-Requires Python3.6, Hermes in ../hermes relative to the dx_job_monitor
+Check if the 002 projects had jobs run and if any failed sending messages to egg-alerts if that is the case and egg-logs to inform the team of projects that had either no jobs run in the last 24h and no issues on jobs run in the last 24h.
 
-To run:
-python3 dx_job_monitor.py
+## What are typical use cases for this app?
+
+Daily check to see if any issues are present.
+
+## What data are required for this app to run?
+
+This requires Hermes in the following structure:
+
++-- hermes/
+|   +-- hermes.py  
++-- dx_job_monitor/
+|   +-- dx_job_monitor.py
+|   +-- hermes.log
+
+Running `python dx_job_monitor.py` will create a log in dx_job_monitor
+
+## What does this app output?
+
+A txt file called hermes.log logs all that is going on.
+
+### This was made by EMEE GLH
