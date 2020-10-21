@@ -15,8 +15,6 @@ sys.path.append("../hermes/")
 
 import hermes
 
-TOKEN_FILE_PATH = "../hermes/slack_token.txt"
-
 
 def get_002_projects():
     """ Return list of 002 projects
@@ -89,7 +87,6 @@ def send_msg_using_hermes(project2jobs, project_no_run):
                     ))
                     hermes.main(
                         {
-                            "token_file": TOKEN_FILE_PATH,
                             "channel": "egg-alerts",
                             "cmd": "msg", "message": message, "verbose": False
                         }
@@ -107,8 +104,8 @@ def send_msg_using_hermes(project2jobs, project_no_run):
         )
         hermes.main(
             {
-                "token_file": TOKEN_FILE_PATH, "channel": "egg-logs",
-                "cmd": "msg", "message": message, "verbose": False
+                "channel": "egg-logs", "cmd": "msg",
+                "message": message, "verbose": False
             }
         )
 
@@ -121,8 +118,8 @@ def send_msg_using_hermes(project2jobs, project_no_run):
         )
         hermes.main(
             {
-                "token_file": TOKEN_FILE_PATH, "channel": "egg-logs",
-                "cmd": "msg", "message": message, "verbose": False
+                "channel": "egg-logs", "cmd": "msg",
+                "message": message, "verbose": False
             }
         )
 
@@ -131,7 +128,7 @@ def main():
     # env variable for dx authentication
     dx_security_context = {
         "auth_token_type": "Bearer",
-        "auth_token": auth_token
+        "auth_token": dnanexus_token
     }
     # set token to env
     dxpy.set_security_context(dx_security_context)
