@@ -8,13 +8,14 @@ Daily check to see if any issues are present.
 
 ## What data are required for this app to run?
 
-This requires Hermes in the following structure:
+This requires Hermes and the dnanexus_token file in the same folder as dx_job_monitor.py:
 
 +-- hermes/  
 |   &nbsp;&nbsp;&nbsp;&nbsp;+-- hermes.py  
 +-- dx_job_monitor/  
 |   &nbsp;&nbsp;&nbsp;&nbsp;+-- dx_job_monitor.py  
 |   &nbsp;&nbsp;&nbsp;&nbsp;+-- hermes.log  
+|   &nbsp;&nbsp;&nbsp;&nbsp;+-- dnanexus_token.py  
 
 Running `python dx_job_monitor.py` will create a log in dx_job_monitor
 
