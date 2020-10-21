@@ -10,11 +10,11 @@ Daily check to see if any issues are present.
 
 This requires Hermes in the following structure:
 
-+-- hermes/
-|   +-- hermes.py  
-+-- dx_job_monitor/
-|   +-- dx_job_monitor.py
-|   +-- hermes.log
++-- hermes/  
+|   &nbsp;&nbsp;&nbsp;&nbsp;+-- hermes.py  
++-- dx_job_monitor/  
+|   &nbsp;&nbsp;&nbsp;&nbsp;+-- dx_job_monitor.py  
+|   &nbsp;&nbsp;&nbsp;&nbsp;+-- hermes.log  
 
 Running `python dx_job_monitor.py` will create a log in dx_job_monitor
 
