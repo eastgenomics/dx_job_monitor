@@ -9,6 +9,8 @@ import sys
 
 import dxpy
 
+from dnanexus_token import auth_token
+
 sys.path.append("../hermes/")
 
 import hermes
@@ -126,6 +128,14 @@ def send_msg_using_hermes(project2jobs, project_no_run):
 
 
 def main():
+    # env variable for dx authentication
+    dx_security_context = {
+        "auth_token_type": "Bearer",
+        "auth_token": auth_token
+    }
+    # set token to env
+    dxpy.set_security_context(dx_security_context)
+
     projects = get_002_projects()
     project2jobs, project_no_run = get_jobs_per_project(projects)
     send_msg_using_hermes(project2jobs, project_no_run)
