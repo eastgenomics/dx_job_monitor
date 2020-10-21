@@ -9,7 +9,7 @@ import sys
 
 import dxpy
 
-from dnanexus_token import auth_token
+from dnanexus_token import dnanexus_token
 
 sys.path.append("../hermes/")
 
