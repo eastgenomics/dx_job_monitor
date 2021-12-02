@@ -5,29 +5,38 @@ Finds failed jobs in 002 projects and sends messages to alert the team
 """
 
 from collections import defaultdict
-import sys
+import os
+import dxpy as dx
+import requests
 
-import dxpy
 
-from dnanexus_token import dnanexus_token
+def post_message_to_slack(channel, message):
+    """
+    Request function for slack web api
 
-sys.path.append("../hermes/")
-
-import hermes
+    Returns:
+        dict: slack api response
+    """
+    return requests.post('https://slack.com/api/chat.postMessage', {
+        'token': os.environ['SLACK_TOKEN'],
+        'channel': f'#{channel}',
+        'text': message
+    }).json()
 
 
 def get_002_projects():
-    """ Return list of 002 projects
+    """
+    Return list of 002 projects
 
     Returns:
         list: List of project ids
     """
 
     project_objects = []
-    projects = dxpy.find_projects(name="002_*", name_mode="glob")
+    projects = dx.find_projects(name="002_*", name_mode="glob")
 
     for project in projects:
-        project_objects.append(dxpy.DXProject(project["id"]))
+        project_objects.append(dx.DXProject(project["id"]))
 
     return project_objects
 
@@ -48,13 +57,13 @@ def get_jobs_per_project(projects):
     for project in projects:
         project_id = project.describe()["id"]
         project_name = project.describe()["name"]
-        jobs = dxpy.find_jobs(project=project_id, created_after=f"-24h")
+        jobs = dx.find_jobs(project=project_id, created_after="-24h")
 
         jobs = [job for job in jobs]
 
         if jobs:
             for job in jobs:
-                job = dxpy.DXJob(job["id"])
+                job = dx.DXJob(job["id"])
                 job_name = job.describe()["name"]
                 job_state = job.describe()["state"]
                 project2jobs[project_name][job_state].append(job_name)
@@ -81,16 +90,12 @@ def send_msg_using_hermes(project2jobs, project_no_run):
                 jobs = ", ".join(project2jobs[project][state])
 
                 if state == "failed":
-                    message = ((
-                        ":x: The following jobs failed in"
-                        f" {project} - {jobs} :x:"
-                    ))
-                    hermes.main(
-                        {
-                            "channel": "egg-alerts",
-                            "cmd": "msg", "message": message, "verbose": False
-                        }
+                    message = (
+                        ':x: The following jobs failed in'
+                        f' {project} - {jobs}'
                     )
+                    post_message_to_slack('egg-alerts', message)
+
         else:
             project_no_pb.append(project)
 
@@ -100,38 +105,32 @@ def send_msg_using_hermes(project2jobs, project_no_run):
         message = (
             ":heavy_check_mark: Jobs have been run in the last 24h and "
             "none have failed for: "
-            f"{job_run_but_no_pb_projects} :heavy_check_mark:"
+            f"{job_run_but_no_pb_projects}"
         )
-        hermes.main(
-            {
-                "channel": "egg-logs", "cmd": "msg",
-                "message": message, "verbose": False
-            }
-        )
+        post_message_to_slack('egg-logs', message)
 
     # Nothing run in the last 24h
     if project_no_run:
         nb_projects_no_jobs = len(project_no_run)
         message = (
             ":heavy_check_mark: No jobs have been ran in the last 24h "
-            f"for {nb_projects_no_jobs} projects :heavy_check_mark:"
+            f"for {nb_projects_no_jobs} projects"
         )
-        hermes.main(
-            {
-                "channel": "egg-logs", "cmd": "msg",
-                "message": message, "verbose": False
-            }
-        )
+        post_message_to_slack('egg-logs', message)
 
 
 def main():
+
+    dnanexus_token = os.environ['DNANEXUS_TOKEN']
+
     # env variable for dx authentication
     dx_security_context = {
-        "auth_token_type": "Bearer",
-        "auth_token": dnanexus_token
-    }
+            "auth_token_type": "Bearer",
+            "auth_token": dnanexus_token
+        }
+
     # set token to env
-    dxpy.set_security_context(dx_security_context)
+    dx.set_security_context(dx_security_context)
 
     projects = get_002_projects()
     project2jobs, project_no_run = get_jobs_per_project(projects)
