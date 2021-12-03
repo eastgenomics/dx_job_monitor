@@ -9,6 +9,10 @@ import os
 import dxpy as dx
 import requests
 
+from helper import get_logger
+
+log = get_logger("main log")
+
 
 def post_message_to_slack(channel, message):
     """
@@ -17,6 +21,7 @@ def post_message_to_slack(channel, message):
     Returns:
         dict: slack api response
     """
+    log.info(f'Sending POST request to channel: #{channel}')
     return requests.post('https://slack.com/api/chat.postMessage', {
         'token': os.environ['SLACK_TOKEN'],
         'channel': f'#{channel}',
@@ -33,7 +38,9 @@ def get_002_projects():
     """
 
     project_objects = []
+    log.info('Get 002 project function started')
     projects = dx.find_projects(name="002_*", name_mode="glob")
+    log.info('Get 002 project function ended')
 
     for project in projects:
         project_objects.append(dx.DXProject(project["id"]))
@@ -42,7 +49,8 @@ def get_002_projects():
 
 
 def get_jobs_per_project(projects):
-    """ Return dict of project2state2jobs
+    """
+    Return dict of project2state2jobs
 
     Args:
         projects (list): List of project ids
@@ -57,6 +65,8 @@ def get_jobs_per_project(projects):
     for project in projects:
         project_id = project.describe()["id"]
         project_name = project.describe()["name"]
+
+        log.info(f'Get job per {project} started')
         jobs = dx.find_jobs(project=project_id, created_after="-24h")
 
         jobs = [job for job in jobs]
@@ -74,12 +84,14 @@ def get_jobs_per_project(projects):
 
 
 def send_msg_using_hermes(project2jobs, project_no_run):
-    """ Sends msg using Hermes
+    """
+    Sends msg using Hermes
 
     Args:
         project2jobs (dict): Dict of project to failed jobs
     """
 
+    log.info('Send message function started')
     project_no_pb = []
 
     for project in project2jobs:

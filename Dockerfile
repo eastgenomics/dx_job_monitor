@@ -8,6 +8,6 @@ COPY requirements.txt requirements.txt
 
 RUN pip install -r requirements.txt
 
-COPY dx_job_monitor.py .
+COPY dx_job_monitor.py helper.py /
 
-CMD [ "python", "-u", "dx_job_monitor.py"]
+CMD [ "python", "dx_job_monitor.py"]
