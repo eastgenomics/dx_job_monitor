@@ -21,7 +21,7 @@ def post_message_to_slack(channel, message):
     Returns:
         dict: slack api response
     """
-    log.info(f'Sending POST request to channel: #{channel}')
+    # log.info(f'Sending POST request to channel: #{channel}')
     return requests.post('https://slack.com/api/chat.postMessage', {
         'token': os.environ['SLACK_TOKEN'],
         'channel': f'#{channel}',
@@ -66,17 +66,17 @@ def get_jobs_per_project(projects):
         project_id = project.describe()["id"]
         project_name = project.describe()["name"]
 
-        log.info(f'Get job per {project} started')
+        log.info(f'Get job per {project_name} started')
         jobs = dx.find_jobs(project=project_id, created_after="-24h")
-
-        jobs = [job for job in jobs]
+        jobs = list(jobs)
 
         if jobs:
             for job in jobs:
                 job = dx.DXJob(job["id"])
                 job_name = job.describe()["name"]
                 job_state = job.describe()["state"]
-                project2jobs[project_name][job_state].append(job_name)
+                project2jobs[
+                    (project_name, project_id)][job_state].append(job_name)
         else:
             project_no_run.append(project_name)
 
@@ -94,17 +94,20 @@ def send_msg_using_hermes(project2jobs, project_no_run):
     log.info('Send message function started')
     project_no_pb = []
 
-    for project in project2jobs:
-        states = project2jobs[project]
+    for project, project_id in project2jobs:
+        states = project2jobs[(project, project_id)]
 
         if "failed" in states:
             for state in states:
-                jobs = ", ".join(project2jobs[project][state])
+                jobs = ", ".join(project2jobs[(project, project_id)][state])
+                id = project_id.split('-')[1]
 
                 if state == "failed":
                     message = (
-                        ':x: The following jobs failed in'
-                        f' {project} - {jobs}'
+                        f':x: The following jobs ({jobs}) failed in'
+                        f' {project} with project ID: {project_id}. Link: '
+                        f'https://platform.dnanexus.com/projects/{id}/'
+                        'monitor?state.values=failed'
                     )
                     post_message_to_slack('egg-alerts', message)
 
