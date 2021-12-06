@@ -1,7 +1,7 @@
 ## What does this app do?
 
 Checks for jobs run in any 002 project in the last 24hr and sends notifications to Slack.  
-If any jobs have failed in a project, a message will be sent to ```egg-alerts```, and those projects where all jobs completed successfully a message will be sent to ```egg-logs```.
+If any jobs have failed in a project, a message will be sent to `egg-alerts`, and those projects where all jobs completed successfully a message will be sent to `egg-logs`.
 
 ## What are typical use cases for this app?
 
@@ -9,15 +9,15 @@ Daily check to see if any run issues are present.
 
 ## What data are required for this app to run?
 
-A config file (txt) containing two env variable: ```DNANEXUS_TOKEN``` and ```SLACK_TOKEN```. 
+A config file (txt) containing two env variable: `DNANEXUS_TOKEN` and `SLACK_TOKEN`. 
 
-To be able to run on the server, another two variables are needed ```HTTP_PROXY``` and ```HTTPS_PROXY```
+To be able to run on the server, another two variables are needed `HTTP_PROXY` and `HTTPS_PROXY`
 
 ## Logging
 
-The main logging script is ```helper.py```
+The main logging script is `helper.py`
 
-The script will generate a log file ```dx-job-monitor.log``` in ```/var/log/monitoring```
+The script will generate a log file `dx-job-monitor.log` in `/var/log/monitoring`
 
 ## Docker
 
@@ -29,6 +29,6 @@ To run the file, current command on server:
 
 ## Automation
 
-A cron job has been set up to run the script daily at 9am: ```0 9 * * *```
+A cron job has been set up to run the script daily at 9am
 
 #### This was made by EMEE GLH
