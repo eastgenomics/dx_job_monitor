@@ -70,7 +70,10 @@ def get_002_projects():
         log.error('Error with DXPY token')
         log.error(e)
 
-        message = f"dx-job-monitoring: Error with dxpy token: `{e}`"
+        message = (
+            "dx-job-monitoring: Error with dxpy token! Error code: \n"
+            f"`{e}`"
+            )
         post_message_to_slack('egg-alerts', message)
 
         log.info('Programme will stop. Alert message sent!')
