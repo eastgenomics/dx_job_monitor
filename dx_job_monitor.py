@@ -15,6 +15,24 @@ from helper import get_logger
 log = get_logger("main log")
 
 
+def check_dx_login():
+    try:
+        dx.api.system_whoami()
+
+    except Exception as e:
+        log.error('Error with dxpy token')
+        log.error(e)
+
+        message = (
+            "dx-job-monitoring: Error with dxpy token! Error code: \n"
+            f"`{e}`"
+            )
+        post_message_to_slack('egg-alerts', message)
+
+        log.info('Programme will stop. Alert message sent!')
+        sys.exit()
+
+
 def post_message_to_slack(channel, message):
     """
     Request function for slack web api
@@ -57,24 +75,10 @@ def get_002_projects():
 
     project_objects = []
 
-    try:
-        projects = dx.find_projects(name="002_*", name_mode="glob")
+    projects = dx.find_projects(name="002_*", name_mode="glob")
 
-        for project in projects:
-            project_objects.append(dx.DXProject(project["id"]))
-
-    except Exception as e:
-        log.error('Error with DXPY token')
-        log.error(e)
-
-        message = (
-            "dx-job-monitoring: Error with dxpy token! Error code: \n"
-            f"`{e}`"
-            )
-        post_message_to_slack('egg-alerts', message)
-
-        log.info('Programme will stop. Alert message sent!')
-        sys.exit()
+    for project in projects:
+        project_objects.append(dx.DXProject(project["id"]))
 
     return project_objects
 
@@ -177,6 +181,7 @@ def main():
 
     # set token to env
     dx.set_security_context(dx_security_context)
+    check_dx_login()
 
     projects = get_002_projects()
     project2jobs, project_no_run = get_jobs_per_project(projects)
