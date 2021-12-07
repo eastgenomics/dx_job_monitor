@@ -8,6 +8,7 @@ from collections import defaultdict
 import os
 import dxpy as dx
 import requests
+import sys
 
 from helper import get_logger
 
@@ -21,12 +22,28 @@ def post_message_to_slack(channel, message):
     Returns:
         dict: slack api response
     """
-    # log.info(f'Sending POST request to channel: #{channel}')
-    return requests.post('https://slack.com/api/chat.postMessage', {
-        'token': os.environ['SLACK_TOKEN'],
-        'channel': f'#{channel}',
-        'text': message
-    }).json()
+
+    log.info(f'Sending POST request to channel: #{channel}')
+
+    try:
+        response = requests.post('https://slack.com/api/chat.postMessage', {
+            'token': os.environ['SLACK_TOKEN'],
+            'channel': f'#{channel}',
+            'text': message
+        }).json()
+
+        if response['ok'] == 'true':
+            pass
+        else:
+            # slack api request failed
+            error_code = response['error']
+            log.error(f'Slack API error to #{channel}')
+            log.error(f'Error Code From Slack: {error_code}')
+
+    except Exception as e:
+        # endpoint request fail from server
+        log.error(f'Error sending POST request to channel #{channel}')
+        log.error(e)
 
 
 def get_002_projects():
@@ -38,12 +55,18 @@ def get_002_projects():
     """
 
     project_objects = []
-    log.info('Get 002 project function started')
-    projects = dx.find_projects(name="002_*", name_mode="glob")
-    log.info('Get 002 project function ended')
 
-    for project in projects:
-        project_objects.append(dx.DXProject(project["id"]))
+    try:
+        projects = dx.find_projects(name="002_*", name_mode="glob")
+
+        for project in projects:
+            project_objects.append(dx.DXProject(project["id"]))
+
+    except Exception as e:
+        log.error('Error with dxpy token')
+        log.error(e)
+        log.error('Programme will stop without sending slack alert')
+        sys.exit()
 
     return project_objects
 
