@@ -9,11 +9,8 @@ import os
 import dxpy as dx
 import requests
 import sys
-from dotenv import load_dotenv
 
 from helper import get_logger
-
-load_dotenv()
 
 log = get_logger("main log")
 
