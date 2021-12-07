@@ -9,8 +9,11 @@ import os
 import dxpy as dx
 import requests
 import sys
+from dotenv import load_dotenv
 
 from helper import get_logger
+
+load_dotenv()
 
 log = get_logger("main log")
 
@@ -32,8 +35,9 @@ def post_message_to_slack(channel, message):
             'text': message
         }).json()
 
-        if response['ok'] == 'true':
-            pass
+        if response['ok']:
+            log.info(f'POST request to channel #{channel} successful')
+            return
         else:
             # slack api request failed
             error_code = response['error']
