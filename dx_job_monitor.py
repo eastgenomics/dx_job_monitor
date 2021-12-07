@@ -67,9 +67,12 @@ def get_002_projects():
             project_objects.append(dx.DXProject(project["id"]))
 
     except Exception as e:
-        log.error('Error with dxpy token')
+        log.error('Error with DXPY token')
         log.error(e)
-        log.error('Programme will stop without sending slack alert')
+
+        message = f'Hermes: Error with DXPY token with error code {e}'
+        post_message_to_slack('egg-alerts', message)
+        log.info('Programme will stop. Alert message sent!')
         sys.exit()
 
     return project_objects
