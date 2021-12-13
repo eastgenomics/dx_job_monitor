@@ -1,29 +1,34 @@
 ## What does this app do?
 
-Checks for jobs run in any 002 project in the last 24g and sends notifications to Slack.  
-If any jobs have failed in a project a message will be sent to egg-alerts, and those projects where all jobs completed successfully a message will be sent to egg-logs.
+Checks for jobs run in any 002 project in the last 24hr and sends notifications to Slack.  
+If any jobs have failed in a project, a message will be sent to `egg-alerts`, and those projects where all jobs completed successfully a message will be sent to `egg-logs`.
 
 ## What are typical use cases for this app?
 
-Daily check to see if any issues are present.
+Daily check to see if any run issues are present.
 
 ## What data are required for this app to run?
 
-This requires Hermes to be in ../hermes relative to dx_job_monitor. This will need the Hermes slack token file to be there too.  
-The dnanexus_token file needs to be in the same folder as dx_job_monitor.py:
+A config file (txt) containing two env variable: `DNANEXUS_TOKEN` and `SLACK_TOKEN`. 
 
-+-- hermes/  
-|   &nbsp;&nbsp;&nbsp;&nbsp;+-- hermes.py  
-+-- dx_job_monitor/  
-|   &nbsp;&nbsp;&nbsp;&nbsp;+-- dx_job_monitor.py  
-|   &nbsp;&nbsp;&nbsp;&nbsp;+-- hermes.log  
-|   &nbsp;&nbsp;&nbsp;&nbsp;+-- dnanexus_token.py  
+To be able to run on the server, another two variables are needed `HTTP_PROXY` and `HTTPS_PROXY`
 
-Running `python dx_job_monitor.py` will create a log in dx_job_monitor
+## Logging
 
-## What does this app output?
+The main logging script is `helper.py`
 
-A txt file called hermes.log logs all that is going on.  
-Sends messages to egg-logs necessarily and egg-alerts if there are failed jobs.
+The script will generate a log file `dx-job-monitor.log` in `/var/log/monitoring`
 
-### This was made by EMEE GLH
+## Docker
+
+A Dockerfile is included to recreate the docker image.
+
+To run the file, current command on server: 
+
+```docker run --env-file <config.txt> -v /var/log/monitoring:/var/log/monitoring:z <image name>```
+
+## Automation
+
+A cron job has been set up to run the script daily at 9am
+
+#### This was made by EMEE GLH
