@@ -134,15 +134,17 @@ def send_msg_using_hermes(project2jobs, project_no_run):
         if "failed" in states:
             for state in states:
                 count = Counter(project2jobs[(project, project_id)][state])
-                ls = [f'{v} {k}' for k, v in count.items()]
+                ls = [f'- {v} {k}' for k, v in count.items()]
 
-                jobs = ", ".join(ls)
+                jobs = "\n".join(ls)
                 id = project_id.split('-')[1]
 
                 if state == "failed":
                     message = (
-                        f':x: The following jobs ({jobs}) failed in'
-                        f' {project} with project ID: {project_id}. Link: '
+                        f':x: The following jobs failed in'
+                        f' {project} with project ID: {project_id}.\n\n'
+                        f'{jobs}'
+                        '\n\nLink: '
                         f'https://platform.dnanexus.com/projects/{id}/'
                         'monitor?state.values=failed'
                     )
