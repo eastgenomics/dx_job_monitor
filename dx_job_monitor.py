@@ -4,7 +4,7 @@
 Finds failed jobs in 002 projects and sends messages to alert the team
 """
 
-from collections import defaultdict
+from collections import defaultdict, Counter
 import os
 import dxpy as dx
 import requests
@@ -102,8 +102,7 @@ def get_jobs_per_project(projects):
         project_name = project.describe()["name"]
 
         log.info(f'Get job per {project_name} started')
-        jobs = dx.find_jobs(project=project_id, created_after="-24h")
-        jobs = list(jobs)
+        jobs = list(dx.find_jobs(project=project_id, created_after="-24h"))
 
         if jobs:
             for job in jobs:
@@ -134,13 +133,18 @@ def send_msg_using_hermes(project2jobs, project_no_run):
 
         if "failed" in states:
             for state in states:
-                jobs = ", ".join(project2jobs[(project, project_id)][state])
+                count = Counter(project2jobs[(project, project_id)][state])
+                ls = [f'- {v} {k}' for k, v in count.items()]
+
+                jobs = "\n".join(ls)
                 id = project_id.split('-')[1]
 
                 if state == "failed":
                     message = (
-                        f':x: The following jobs ({jobs}) failed in'
-                        f' {project} with project ID: {project_id}. Link: '
+                        f':x: The following jobs failed in'
+                        f' {project} with project ID: {project_id}.\n\n'
+                        f'{jobs}'
+                        '\n\nLink: '
                         f'https://platform.dnanexus.com/projects/{id}/'
                         'monitor?state.values=failed'
                     )
