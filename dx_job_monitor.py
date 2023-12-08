@@ -75,35 +75,9 @@ def _get_projects(prefix: str) -> list:
         Iterable: List of projects
     """
 
-    return [p["id"] for p in dx.find_projects(name=f"{prefix}_*", name_mode="glob")]
-
-
-def _get_project_name(project_id: str) -> str:
-    """
-    Return project name
-
-    Args:
-        project_id (str): Project id
-
-    Returns:
-        str: Project name
-    """
-
-    return dx.describe(project_id)["name"]
-
-
-def _get_job_description(job_id: str) -> dict:
-    """
-    Return job description
-
-    Args:
-        job_id (str): Job id
-
-    Returns:
-        str: Job description
-    """
-
-    return dx.describe(job_id)
+    return list(
+        dx.find_projects(name=f"{prefix}_*", name_mode="glob", describe={"name": True})
+    )
 
 
 def _get_jobs_in_project(project_id: str, created="-24h") -> list:
@@ -117,10 +91,16 @@ def _get_jobs_in_project(project_id: str, created="-24h") -> list:
         str: Job description
     """
 
-    return [j["id"] for j in dx.find_jobs(project=project_id, created_after=created)]
+    return list(
+        dx.find_jobs(
+            project=project_id,
+            created_after=created,
+            describe={"name": True, "state": True},
+        )
+    )
 
 
-def get_jobs_per_project(project_ids: list):
+def get_jobs_per_project(projects: list):
     """
     Return dict of project2state2jobs
 
@@ -135,28 +115,29 @@ def get_jobs_per_project(project_ids: list):
     project_id_with_no_failed_jobs = []
     data = collections.defaultdict(list)
 
-    for id in project_ids:
-        jobs = _get_jobs_in_project(id)
+    for project in projects:
+        project_id = project["id"]
+        project_name = project["describe"]["name"]
+
+        jobs = _get_jobs_in_project(project_id)
 
         if jobs:
-            project_name = _get_project_name(id)
-            project_id_to_name[id] = project_name
+            project_id_to_name[project_id] = project_name
 
-            log.info(f"Fetching {len(jobs)} job(s) in project {id}")
+            log.info(f"Processing {len(jobs)} job(s) in project {project_id}")
 
             failed = False
 
-            for job_id in jobs:
-                job_description = _get_job_description(job_id)
-                name, state = job_description["name"], job_description["state"]
+            for job in jobs:
+                name, state = job["describe"]["name"], job["describe"]["state"]
 
                 if state.lower() == "failed":
-                    data[id].append(name)
+                    data[project_id].append(name)
                     failed = True
 
             if not failed:  # there is no failed jobs in this project
                 project_id_with_no_failed_jobs.append(
-                    f"<{DNANEXUS_URL}{id.lstrip('project-')}|{project_name}>\n"
+                    f"<{DNANEXUS_URL}{project_id.lstrip('project-')}|{project_name}>\n"
                 )
 
     # No pb projects
@@ -171,7 +152,7 @@ def get_jobs_per_project(project_ids: list):
     return project_id_to_name, data
 
 
-def send_message_to_slack(data: dict, project_id_to_name: dict):
+def send_message_to_slack(data: dict, project_id_to_name: dict) -> None:
     """
     Function to sort through data and send messages to Slack if job failed
 
@@ -201,8 +182,8 @@ def send_message_to_slack(data: dict, project_id_to_name: dict):
 def main():
     _check_dx_login(os.environ.get("DNANEXUS_TOKEN"))
 
-    project_ids = _get_projects("002")
-    project_id_to_name, data = get_jobs_per_project(project_ids)
+    projects = _get_projects("002")
+    project_id_to_name, data = get_jobs_per_project(projects)
     send_message_to_slack(data, project_id_to_name)
 
     # Nothing run in the last 24h
