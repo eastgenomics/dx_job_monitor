@@ -34,7 +34,10 @@ def _check_dx_login(token: str):
         raise Exception("dx-job-monitoring: Error with dxpy token!")
 
 
-def _post_message_to_slack(channel: str, message: str) -> None:
+def _post_message_to_slack(
+    channel: str,
+    message: str,
+) -> None:
     """
     Request function for slack web api
 
@@ -130,13 +133,6 @@ def get_jobs_per_project(project_ids: list):
 
     project_id_to_name = {}
     project_id_with_no_failed_jobs = []
-
-    # example of data structure
-    # {
-    #    "project-1234": {
-    #       "failed": [(job-123, "eggd_vep"), (job-456, "eggd_tso500")],
-    #    }
-    # }
     data = collections.defaultdict(list)
 
     for id in project_ids:
@@ -166,7 +162,7 @@ def get_jobs_per_project(project_ids: list):
     # No pb projects
     if project_id_with_no_failed_jobs:
         message = (
-            ":heavy_check_mark: Jobs have been run in the last 24h and "
+            "Jobs have been run in the last 24h and "
             "none have failed for:\n"
             "{}".format("\n".join(project_id_with_no_failed_jobs))
         )
@@ -196,7 +192,10 @@ def send_message_to_slack(data: dict, project_id_to_name: dict):
             "monitor?state.values=failed"
         )
 
-        _post_message_to_slack("#egg-alerts", message)
+        _post_message_to_slack(
+            "#egg-alerts",
+            message,
+        )
 
 
 def main():
