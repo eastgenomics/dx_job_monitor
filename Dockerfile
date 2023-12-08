@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.8-slim-bullseye
+FROM python:3.8-slim
+
+RUN apt-get update -y && apt-get install -y gcc
 
 WORKDIR /
 

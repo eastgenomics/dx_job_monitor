@@ -1,89 +1,123 @@
 #!/bin/python3
 
-""" dx_job_monitor
+""" 
 Finds failed jobs in 002 projects and sends messages to alert the team
+Requires:
+    - DNANEXUS_TOKEN
+    - SLACK_TOKEN
 """
 
-from collections import defaultdict, Counter
+import collections
 import os
 import dxpy as dx
 import requests
-import sys
 
 from helper import get_logger
 
 log = get_logger("main log")
 
+DNANEXUS_URL = "https://platform.dnanexus.com/panx/projects/"
 
-def check_dx_login():
+
+def _check_dx_login(token: str):
+    dx.set_security_context({"auth_token_type": "Bearer", "auth_token": token})
+
     try:
         dx.api.system_whoami()
 
     except Exception as e:
-        log.error('Error with dxpy token')
         log.error(e)
 
-        message = (
-            "dx-job-monitoring: Error with dxpy token! Error code: \n"
-            f"`{e}`"
-            )
-        post_message_to_slack('egg-alerts', message)
+        message = "dx-job-monitoring: Error with dxpy token! Error code: \n" f"`{e}`"
+        _post_message_to_slack("#egg-alerts", message)
 
-        log.info('Programme will stop. Alert message sent!')
-        sys.exit()
+        raise Exception("dx-job-monitoring: Error with dxpy token!")
 
 
-def post_message_to_slack(channel, message):
+def _post_message_to_slack(channel: str, message: str) -> None:
     """
     Request function for slack web api
 
-    Returns:
-        dict: slack api response
+    Returns: None
     """
 
-    log.info(f'Sending POST request to channel: #{channel}')
+    log.info(f"Sending POST request to channel: #{channel}")
 
     try:
-        response = requests.post('https://slack.com/api/chat.postMessage', {
-            'token': os.environ['SLACK_TOKEN'],
-            'channel': f'#{channel}',
-            'text': message
-        }).json()
+        response = requests.post(
+            "https://slack.com/api/chat.postMessage",
+            {
+                "token": os.environ.get("SLACK_TOKEN"),
+                "channel": channel,
+                "text": message,
+            },
+        ).json()
 
-        if response['ok']:
-            log.info(f'POST request to channel #{channel} successful')
+        if response["ok"]:
+            log.info(f"POST request to channel #{channel} successful")
             return
         else:
             # slack api request failed
-            error_code = response['error']
-            log.error(f'Slack API error to #{channel}')
-            log.error(f'Error Code From Slack: {error_code}')
+            log.error(response["error"])
 
     except Exception as e:
-        # endpoint request fail from server
-        log.error(f'Error sending POST request to channel #{channel}')
         log.error(e)
 
 
-def get_002_projects():
+def _get_projects(prefix: str) -> list:
     """
-    Return list of 002 projects
+    Return list of <prefix> projects
 
     Returns:
-        list: List of project ids
+        Iterable: List of projects
     """
 
-    project_objects = []
-
-    projects = dx.find_projects(name="002_*", name_mode="glob")
-
-    for project in projects:
-        project_objects.append(dx.DXProject(project["id"]))
-
-    return project_objects
+    return [p["id"] for p in dx.find_projects(name=f"{prefix}_*", name_mode="glob")]
 
 
-def get_jobs_per_project(projects):
+def _get_project_name(project_id: str) -> str:
+    """
+    Return project name
+
+    Args:
+        project_id (str): Project id
+
+    Returns:
+        str: Project name
+    """
+
+    return dx.describe(project_id)["name"]
+
+
+def _get_job_description(job_id: str) -> dict:
+    """
+    Return job description
+
+    Args:
+        job_id (str): Job id
+
+    Returns:
+        str: Job description
+    """
+
+    return dx.describe(job_id)
+
+
+def _get_jobs_in_project(project_id: str, created="-24h") -> list:
+    """
+    Return job description
+
+    Args:
+        job_id (str): Job id
+
+    Returns:
+        str: Job description
+    """
+
+    return [j["id"] for j in dx.find_jobs(project=project_id, created_after=created)]
+
+
+def get_jobs_per_project(project_ids: list):
     """
     Return dict of project2state2jobs
 
@@ -94,102 +128,89 @@ def get_jobs_per_project(projects):
         dict: Dict of project to state to jobs
     """
 
-    project2jobs = defaultdict(lambda: defaultdict(list))
-    project_no_run = []
+    project_id_to_name = {}
+    project_id_with_no_failed_jobs = []
 
-    for project in projects:
-        project_id = project.describe()["id"]
-        project_name = project.describe()["name"]
+    # example of data structure
+    # {
+    #    "project-1234": {
+    #       "failed": [(job-123, "eggd_vep"), (job-456, "eggd_tso500")],
+    #    }
+    # }
+    data = collections.defaultdict(list)
 
-        log.info(f'Get job per {project_name} started')
-        jobs = list(dx.find_jobs(project=project_id, created_after="-24h"))
+    for id in project_ids:
+        jobs = _get_jobs_in_project(id)
 
         if jobs:
-            for job in jobs:
-                job = dx.DXJob(job["id"])
-                job_name = job.describe()["name"]
-                job_state = job.describe()["state"]
-                project2jobs[
-                    (project_name, project_id)][job_state].append(job_name)
-        else:
-            project_no_run.append(project_name)
+            project_name = _get_project_name(id)
+            project_id_to_name[id] = project_name
 
-    return project2jobs, project_no_run
+            log.info(f"Fetching {len(jobs)} job(s) in project {id}")
+
+            failed = False
+
+            for job_id in jobs:
+                job_description = _get_job_description(job_id)
+                name, state = job_description["name"], job_description["state"]
+
+                if state.lower() == "failed":
+                    data[id].append(name)
+                    failed = True
+
+            if not failed:  # there is no failed jobs in this project
+                project_id_with_no_failed_jobs.append(
+                    f"<{DNANEXUS_URL}{id.lstrip('project-')}|{project_name}>\n"
+                )
+
+    # No pb projects
+    if project_id_with_no_failed_jobs:
+        message = (
+            ":heavy_check_mark: Jobs have been run in the last 24h and "
+            "none have failed for:\n"
+            "{}".format("\n".join(project_id_with_no_failed_jobs))
+        )
+        _post_message_to_slack("#egg-logs", message)
+
+    return project_id_to_name, data
 
 
-def send_msg_using_hermes(project2jobs, project_no_run):
+def send_message_to_slack(data: dict, project_id_to_name: dict):
     """
-    Sends msg using Hermes
+    Function to sort through data and send messages to Slack if job failed
 
     Args:
         project2jobs (dict): Dict of project to failed jobs
     """
 
-    log.info('Send message function started')
-    project_no_pb = []
+    for project_id, names in data.items():
+        count = collections.Counter(names)
+        ls = "\n".join([f"- {v} {k}" for k, v in count.items()])
 
-    for project, project_id in project2jobs:
-        states = project2jobs[(project, project_id)]
-
-        if "failed" in states:
-            for state in states:
-                count = Counter(project2jobs[(project, project_id)][state])
-                ls = [f'- {v} {k}' for k, v in count.items()]
-
-                jobs = "\n".join(ls)
-                id = project_id.split('-')[1]
-
-                if state == "failed":
-                    message = (
-                        f':x: The following jobs failed in'
-                        f' {project} with project ID: {project_id}.\n\n'
-                        f'{jobs}'
-                        '\n\nLink: '
-                        f'https://platform.dnanexus.com/projects/{id}/'
-                        'monitor?state.values=failed'
-                    )
-                    post_message_to_slack('egg-alerts', message)
-
-        else:
-            project_no_pb.append(project)
-
-    # No pb projects
-    if project_no_pb:
-        job_run_but_no_pb_projects = ", ".join(project_no_pb)
         message = (
-            ":heavy_check_mark: Jobs have been run in the last 24h and "
-            "none have failed for: "
-            f"{job_run_but_no_pb_projects}"
+            f":x: The following jobs failed in "
+            f"<{DNANEXUS_URL}{project_id.lstrip('project-')}|{project_id_to_name[project_id]}>\n"
+            f"{ls}"
+            "\n\nLink: "
+            f"{DNANEXUS_URL}{project_id.lstrip('project-')}/"
+            "monitor?state.values=failed"
         )
-        post_message_to_slack('egg-logs', message)
 
-    # Nothing run in the last 24h
-    if project_no_run:
-        nb_projects_no_jobs = len(project_no_run)
-        message = (
-            ":heavy_check_mark: No jobs have been ran in the last 24h "
-            f"for {nb_projects_no_jobs} projects"
-        )
-        post_message_to_slack('egg-logs', message)
+        _post_message_to_slack("#egg-alerts", message)
 
 
 def main():
+    _check_dx_login(os.environ.get("DNANEXUS_TOKEN"))
 
-    dnanexus_token = os.environ['DNANEXUS_TOKEN']
+    project_ids = _get_projects("002")
+    project_id_to_name, data = get_jobs_per_project(project_ids)
+    send_message_to_slack(data, project_id_to_name)
 
-    # env variable for dx authentication
-    dx_security_context = {
-            "auth_token_type": "Bearer",
-            "auth_token": dnanexus_token
-        }
-
-    # set token to env
-    dx.set_security_context(dx_security_context)
-    check_dx_login()
-
-    projects = get_002_projects()
-    project2jobs, project_no_run = get_jobs_per_project(projects)
-    send_msg_using_hermes(project2jobs, project_no_run)
+    # Nothing run in the last 24h
+    _post_message_to_slack(
+        "#egg-logs",
+        ":information_source: dx-job-monitoring: daily check!",
+    )
 
 
 if __name__ == "__main__":

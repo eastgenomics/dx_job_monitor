@@ -11,8 +11,8 @@ from logging.handlers import TimedRotatingFileHandler
 
 FORMATTER = logging.Formatter(
     "%(asctime)s:%(name)s:%(module)s:%(levelname)s:%(message)s"
-    )
-LOG_FILE = "var/log/monitoring/dx-job-monitor.log"
+)
+LOG_FILE = "dx-job-monitor.log"
 
 
 def get_console_handler():
@@ -22,7 +22,7 @@ def get_console_handler():
 
 
 def get_file_handler():
-    file_handler = TimedRotatingFileHandler(LOG_FILE, when='W6')
+    file_handler = TimedRotatingFileHandler(LOG_FILE, when="W6")
     file_handler.setFormatter(FORMATTER)
     return file_handler
 
